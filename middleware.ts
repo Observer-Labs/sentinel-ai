@@ -29,25 +29,28 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const authRoutes = ['/login', '/signup', '/forgot-password']
-  const publicRoutes = ['/privacy', '/terms']
+  const publicRoutes = ['/', '/privacy', '/terms']
   const isAuthRoute = authRoutes.some(r => pathname.startsWith(r))
-  const isPublicRoute = publicRoutes.some(r => pathname.startsWith(r))
+  const isPublicRoute = publicRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
 
-  if (!user && !isAuthRoute && !isPublicRoute && !pathname.startsWith('/api')) {
+  // Logged-in user on landing page → send to dashboard
+  if (user && pathname === '/') {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
+  // Logged-in user on auth pages → send to dashboard
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
-  if (pathname === '/') {
+  // Not logged in, protected route → send to login
+  if (!user && !isAuthRoute && !isPublicRoute && !pathname.startsWith('/api')) {
     const url = request.nextUrl.clone()
-    url.pathname = user ? '/dashboard' : '/login'
+    url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
